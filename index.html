@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="是只美西螈出品的《泥土商店》Minecraft 地图。泥土是唯一的货币，体验独特的生存与交易玩法。">
+<meta name="theme-color" content="#7aa95c">
+<title>泥土商店地图 · 是只美西螈</title>
+<style>
+    /* ================= 基础变量 ================= */
+    :root{
+        --bg:#f5f5f7;
+        --ink:#1d1d1f;
+        --muted:#55555a;
+        --line:rgba(0,0,0,.07);
+        
+        /* 液态玻璃核心色彩 */
+        --glass-bg: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3));
+        --glass-border: rgba(255, 255, 255, 0.8);
+        --glass-shadow: 0 16px 40px rgba(0,0,0,0.04), inset 0 1px 1px rgba(255,255,255,0.9);
+        
+        --green:#7aa95c;
+        --green-deep:#5d8a3a;
+        --dirt:#8b5e3c;
+        --gold:#d18a3a;
+        --radius:28px;
+    }
+
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    
+    body{
+        font-family:-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+        background:var(--bg);
+        color:var(--ink);
+        overflow-x:hidden;
+        -webkit-font-smoothing:antialiased;
+        -moz-osx-font-smoothing:grayscale;
+        text-rendering:optimizeLegibility;
+        line-height:1.6;
+        letter-spacing: 0.02em;
+    }
+
+    /* ================= 顶部进度条 ================= */
+    .progress-bar{
+        position:fixed;top:0;left:0;height:3px;width:0%;
+        background:linear-gradient(90deg,var(--green),var(--gold));
+        z-index:9999;transition:width .1s linear;
+        box-shadow: 0 0 10px rgba(122,169,92,.5);
+    }
+
+    /* ================= 导航栏 (液态玻璃) ================= */
+    nav{
+        position:fixed;top:0;left:0;right:0;height:58px;
+        background: rgba(255, 255, 255, 0.55);
+        backdrop-filter: blur(30px) saturate(200%);
+        -webkit-backdrop-filter: blur(30px) saturate(200%);
+        border-bottom:1px solid rgba(255,255,255,0.6);
+        box-shadow: 0 4px 30px rgba(0,0,0,0.03);
+        display:flex;align-items:center;justify-content:space-between;
+        padding:0 max(18px,4vw);
+        z-index:999;
+        font-size:13px;font-weight:500;
+    }
+    .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:0;}
+    .brand-mark{
+        width:24px;height:24px;border-radius:8px;
+        background:linear-gradient(180deg,#7cb342 0 32%,#8b5e3c 32% 100%);
+        box-shadow:inset 0 -2px 0 rgba(0,0,0,.18),0 4px 10px rgba(90,120,50,.22);
+        position:relative;overflow:hidden;
+    }
+    .brand-mark::after{
+        content:"";position:absolute;inset:0;
+        background-image:radial-gradient(rgba(255,255,255,.35) 1px,transparent 1px);
+        background-size:7px 7px;opacity:.5;
+    }
+    .nav-links{display:flex;align-items:center;gap:6px;}
+    .nav-links a{
+        color:var(--ink);text-decoration:none;opacity:.62;
+        padding:8px 12px;border-radius:999px;
+        transition:opacity .2s,background .2s;
+    }
+    .nav-links a:hover{opacity:1;background:rgba(0,0,0,.04);}
+    
+    /* 液态按钮 */
+    .contact-btn{
+        margin-left:6px;
+        padding:8px 16px;border-radius:999px;
+        border:1px solid rgba(122,169,92,.3);
+        background:linear-gradient(180deg, rgba(122,169,92,.15), rgba(122,169,92,.05));
+        backdrop-filter: blur(10px);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 10px rgba(122,169,92,0.1);
+        color:var(--green-deep);
+        font-size:12px;font-weight:700;
+        cursor:pointer;transition:all .2s;letter-spacing:0;
+    }
+    .contact-btn:hover{
+        background:linear-gradient(180deg, rgba(122,169,92,.25), rgba(122,169,92,.1));
+        transform: translateY(-1px);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 15px rgba(122,169,92,0.15);
+    }
+    .contact-btn:active{transform:scale(.95);}
+
+    /* ================= 通用动画 ================= */
+    .reveal{opacity:0;transform:translateY(40px);transition:opacity .8s cubic-bezier(.25,1,.5,1),transform .8s cubic-bezier(.25,1,.5,1);}
+    .reveal.show{opacity:1;transform:translateY(0);}
+
+    /* ================= Hero 区域 ================= */
+    .hero{
+        min-height:100vh;
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        text-align:center;position:relative;padding:120px 24px 90px;
+        background:
+            radial-gradient(60% 50% at 50% 10%,rgba(170,210,150,.3),transparent 70%),
+            radial-gradient(50% 40% at 15% 75%,rgba(190,150,110,.2),transparent 70%),
+            linear-gradient(180deg,#fbfdf9 0%,#f5f5f7 65%);
+    }
+    .hero::before{
+        content:"";position:absolute;inset:0;
+        background-image:radial-gradient(rgba(80,60,30,.08) 1px,transparent 1px);
+        background-size:26px 26px;
+        mask-image:linear-gradient(180deg,rgba(0,0,0,.55),transparent 80%);
+        -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.55),transparent 80%);
+        pointer-events:none;
+    }
+    .hero-inner{position:relative;z-index:2;max-width:760px;}
+    
+    .eyebrow{
+        display:inline-flex;align-items:center;gap:8px;
+        font-size:11px;letter-spacing:3px;font-weight:600;
+        color:var(--green-deep);margin-bottom:22px;
+        padding:8px 14px;border-radius:999px;
+        
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        
+        opacity:0;animation:heroIn .9s .1s cubic-bezier(.25,1,.5,1) forwards;
+    }
+    .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(122,169,92,.8);}
+    
+    .hero h1{
+        font-size:clamp(3rem,11vw,5.6rem);
+        font-weight:800;letter-spacing:-1.5px;line-height:1.1;
+        opacity:0;transform:translateY(26px);
+        animation:heroIn 1s .22s cubic-bezier(.25,1,.5,1) forwards;
+    }
+    .hero h1 span{
+        background:linear-gradient(180deg,#8fbf6a,#7a5636);
+        -webkit-background-clip:text;background-clip:text;color:transparent;
+    }
+    
+    .hero .lead{
+        font-size:clamp(1rem,3.4vw,1.15rem);
+        color:var(--muted);margin-top:26px;line-height:2.1;
+        opacity:0;transform:translateY(18px);
+        animation:heroIn 1s .5s cubic-bezier(.25,1,.5,1) forwards;
+    }
+    .hero .lead b{color:var(--dirt); font-weight:700;}
+    
+    .hero-tags{
+        display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:30px;
+        opacity:0;transform:translateY(18px);
+        animation:heroIn 1s .72s cubic-bezier(.25,1,.5,1) forwards;
+    }
+    .tag{
+        display:inline-flex;align-items:center;gap:8px;
+        padding:9px 15px;border-radius:999px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        font-size:.8rem;font-weight:600;color:#3e2a1a;
+        letter-spacing:0;
+    }
+    .tag .mini-leg{width:16px;height:16px;display:inline-block;}
+    .tag .mini-leg svg{width:100%;height:100%;shape-rendering:crispEdges;display:block;}
+    .tag .mini-leg .px-meat{fill:var(--gold);}
+    .tag .mini-leg .px-bone{fill:#f7f1e3;}
+    
+    .scroll-hint{
+        position:absolute;bottom:34px;left:50%;transform:translateX(-50%);
+        font-size:11px;color:#86868b;letter-spacing:2px;
+        animation:bounce 2s ease-in-out infinite;z-index:2;
+    }
+    @keyframes heroIn{to{opacity:1;transform:translateY(0);}}
+    @keyframes bounce{0%,100%{transform:translate(-50%,0);opacity:1;}50%{transform:translate(-50%,7px);opacity:.45;}}
+
+    /* ================= 通用区块 ================= */
+    .section{
+        min-height:92vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+        padding:100px 24px;text-align:center;position:relative;
+    }
+    .section-eyebrow{
+        font-size:11px;letter-spacing:3px;font-weight:700;color:var(--green-deep);
+        margin-bottom:14px;text-transform:uppercase;
+    }
+    .section h2{
+        font-size:clamp(2rem,6vw,3rem);font-weight:800;letter-spacing:-0.5px;line-height:1.2;
+    }
+    .section .sub{
+        color:var(--muted);margin-top:18px;font-size:clamp(.95rem,3vw,1.08rem);
+        max-width:600px;line-height:1.9;font-weight:400;
+    }
+
+    /* ================= 档案布局 ================= */
+    .archive-layout{
+        width:100%;max-width:980px;margin-top:48px;
+        display:grid;grid-template-columns:1.05fr 1.4fr;gap:18px;align-items:stretch;
+    }
+    
+    .rating-card{
+        padding:30px 26px;border-radius:var(--radius);
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+        backdrop-filter: blur(30px) saturate(180%);
+        -webkit-backdrop-filter: blur(30px) saturate(180%);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        text-align:center;position:relative;overflow:hidden;
+    }
+    .rating-card::before{
+        content:"";position:absolute;width:180px;height:180px;border-radius:50%;
+        background:radial-gradient(circle,rgba(209,138,58,.25),transparent 70%);
+        top:-60px;right:-60px;pointer-events:none;
+    }
+    .rating-card .score{
+        font-size:clamp(3.2rem,10vw,4.8rem);font-weight:800;letter-spacing:-2px;line-height:1;
+        background:linear-gradient(180deg,#8fbf6a,#7a5636);
+        -webkit-background-clip:text;background-clip:text;color:transparent;
+    }
+    .rating-card .score small{font-size:.3em;letter-spacing:0;color:var(--muted);-webkit-text-fill-color:var(--muted);font-weight:700;}
+    .rating-legs{display:flex;justify-content:center;align-items:center;gap:5px;margin:16px 0 10px;flex-wrap:wrap;}
+    .leg{position:relative;width:28px;height:28px;flex-shrink:0;image-rendering:pixelated;}
+    .leg svg{position:absolute;inset:0;width:100%;height:100%;shape-rendering:crispEdges;display:block;}
+    .leg .px-meat{fill:var(--gold);}
+    .leg .px-bone{fill:#f7f1e3;}
+    .leg.half .leg-base .px-meat{fill:#dcdce1;}
+    .leg.half .leg-base .px-bone{fill:#ececf0;}
+    .leg.half .leg-fill{clip-path:inset(0 80% 0 0);-webkit-clip-path:inset(0 80% 0 0);}
+    .rating-card .hint{font-size:.78rem;color:var(--muted);line-height:1.8; font-weight:400;}
+
+    .stats-grid{
+        display:grid;grid-template-columns:repeat(2,1fr);gap:14px;
+    }
+    
+    .stat-card{
+        padding:24px 20px;border-radius:24px;text-align:left;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+        backdrop-filter: blur(30px) saturate(180%);
+        -webkit-backdrop-filter: blur(30px) saturate(180%);
+        transition:transform .35s cubic-bezier(.25,1,.5,1),box-shadow .35s;
+        position:relative;overflow:hidden;
+    }
+    .stat-card:hover{
+        transform:translateY(-4px);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.08), inset 0 1px 1px rgba(255,255,255,1);
+    }
+    .stat-card .label{font-size:.76rem;color:var(--muted);letter-spacing:1px;margin-bottom:10px;font-weight:400;}
+    .stat-card .num{
+        font-size:clamp(1.8rem,5vw,2.5rem);font-weight:800;letter-spacing:-1px;line-height:1;
+        background:linear-gradient(180deg,#8fbf6a,#7a5636);
+        -webkit-background-clip:text;background-clip:text;color:transparent;
+    }
+    .stat-card .num .unit{font-size:.4em;letter-spacing:0;margin-left:2px;}
+
+    .badge-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:34px;}
+    .trust-badge{
+        display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        font-size:.78rem;font-weight:600;color:#3e2a1a;
+    }
+    .trust-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(122,169,92,.75);}
+    .trust-badge .dot.gold{background:var(--gold);box-shadow:0 0 8px rgba(209,138,58,.75);}
+
+    /* ================= 玩法 ================= */
+    .cards-wrap{
+        width:100%;max-width:980px;margin-top:48px;
+        display:grid;grid-template-columns:repeat(2,1fr);gap:16px;
+    }
+    
+    .feature-card{
+        padding:28px 26px 30px;border-radius:26px;text-align:left;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+        backdrop-filter: blur(30px) saturate(180%);
+        -webkit-backdrop-filter: blur(30px) saturate(180%);
+        transition:transform .35s cubic-bezier(.25,1,.5,1),box-shadow .35s;
+        position:relative;overflow:hidden;
+    }
+    .feature-card:hover{
+        transform:translateY(-5px);
+        box-shadow: 0 24px 60px rgba(0,0,0,0.08), inset 0 1px 1px rgba(255,255,255,1);
+    }
+    .feature-card .index{
+        position:absolute;top:18px;right:20px;
+        font-size:2.2rem;font-weight:800;letter-spacing:-1px;
+        color:rgba(80,60,30,.1);
+        line-height:1;
+    }
+    .feature-card .icon{
+        width:44px;height:44px;border-radius:14px;
+        display:flex;align-items:center;justify-content:center;
+        background:linear-gradient(180deg,rgba(122,169,92,.2),rgba(139,94,60,.1));
+        border:1px solid rgba(255,255,255,.9);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,1);
+        font-size:22px;margin-bottom:18px;
+    }
+    .feature-card h3{font-size:1.12rem;font-weight:700;letter-spacing:0;margin-bottom:12px;}
+    .feature-card p{font-size:.88rem;color:var(--muted);line-height:1.9; font-weight:400;}
+    .feature-card p em{font-style:normal;font-weight:600;color:var(--dirt);}
+
+    /* ================= 团队 ================= */
+    .team-wrap{
+        width:100%;max-width:980px;margin-top:48px;
+        display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
+    }
+    
+    .team-card{
+        padding:26px 18px;border-radius:24px;text-align:center;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+        backdrop-filter: blur(30px) saturate(180%);
+        -webkit-backdrop-filter: blur(30px) saturate(180%);
+        transition:transform .35s cubic-bezier(.25,1,.5,1),box-shadow .35s;
+    }
+    .team-card:hover{
+        transform:translateY(-4px);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.08), inset 0 1px 1px rgba(255,255,255,1);
+    }
+    .team-role{
+        display:inline-block;padding:5px 12px;border-radius:999px;
+        font-size:.62rem;letter-spacing:1.6px;font-weight:700;
+        color:var(--green-deep);background:rgba(122,169,92,.15);
+        border:1px solid rgba(122,169,92,.2);margin-bottom:14px;
+        box-shadow: inset 0 1px 1px rgba(255,255,255,0.5);
+    }
+    .team-name{font-size:1rem;font-weight:700;letter-spacing:0;line-height:1.35;}
+    .team-desc{font-size:.72rem;color:var(--muted);margin-top:8px;line-height:1.6; font-weight:400;}
+
+    /* ================= 视差区域 ================= */
+    .parallax-section{
+        min-height:100vh;position:relative;overflow:hidden;
+        display:flex;align-items:center;justify-content:center;flex-direction:column;
+        text-align:center;padding:110px 24px;
+        background:
+            radial-gradient(55% 45% at 50% 45%,rgba(170,210,150,.25),transparent 70%),
+            linear-gradient(180deg,#f5f5f7,#fbfaf6);
+    }
+    
+    .parallax-obj {
+        position: absolute; 
+        will-change: transform;
+        z-index: 1;
+    }
+
+    .parallax-block{
+        width: 100%; height: 100%;
+        border-radius:16px; opacity:.9;
+        box-shadow: inset -4px -4px 0 rgba(0,0,0,.15), inset 4px 4px 0 rgba(255,255,255,.2), 0 20px 40px rgba(80,60,30,.2);
+        border: 2px solid rgba(255,255,255,.2);
+        animation: floaty 5s ease-in-out infinite alternate;
+    }
+
+    @keyframes floaty {
+        0% { transform: translateY(0px) rotate(0deg); }
+        100% { transform: translateY(-18px) rotate(3deg); }
+    }
+
+    .parallax-section h2{
+        font-size:clamp(1.9rem,6vw,3.2rem);font-weight:800;letter-spacing:-0.5px;
+        z-index:2;position:relative;line-height:1.3;max-width:760px; 
+        text-shadow: 0 4px 20px rgba(255,255,255,0.9);
+    }
+    
+    .parallax-section p{
+        color:var(--muted);
+        font-size:clamp(.95rem,3vw,1.1rem);
+        margin-top:24px;
+        max-width:680px;
+        line-height:2.2; 
+        z-index:2;
+        position:relative;
+        text-shadow: 0 2px 10px rgba(255,255,255,0.9);
+        font-weight:400;
+    }
+
+    .b-dirt{background:#8d6e63;}
+    .b-dirt::after{content:"";position:absolute;inset:0;border-radius:inherit;
+        background-image:radial-gradient(#4e2f1d 2px,transparent 2.1px),radial-gradient(#b07a55 2px,transparent 2.1px);
+        background-size:14px 14px,18px 18px;opacity:.6;}
+    .b-grass{background:linear-gradient(180deg,#6fae3d 0 32%,#8d6e63 32% 100%);}
+    .b-grass::after{content:"";position:absolute;inset:0;border-radius:inherit;
+        background-image:radial-gradient(#4e7a24 2px,transparent 2.1px);
+        background-size:12px 12px;opacity:.5;}
+    .b-mud{background:#6b5a4a;}
+    .b-mud::after{content:"";position:absolute;inset:0;border-radius:inherit;
+        background-image:radial-gradient(#2e231b 2px,transparent 2.1px);
+        background-size:15px 15px;opacity:.6;}
+    .b-coarse{background:#a1795c;}
+    .b-coarse::after{content:"";position:absolute;inset:0;border-radius:inherit;
+        background-image:radial-gradient(#5b3d29 2.5px,transparent 2.6px);
+        background-size:11px 11px;opacity:.55;}
+
+    /* ================= CTA 区域 ================= */
+    .cta-section{
+        padding:120px 24px;text-align:center;
+        background:linear-gradient(180deg,#fbfaf6,#f5f5f7);
+        position:relative;overflow:hidden;
+    }
+    .cta-section::before{
+        content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);
+        width:680px;height:420px;border-radius:50%;
+        background:radial-gradient(circle,rgba(170,210,150,.25),transparent 70%);
+        pointer-events:none;
+    }
+    .cta-section h2{font-size:clamp(1.9rem,5.5vw,2.8rem);font-weight:800;letter-spacing:-0.5px;position:relative;}
+    .cta-section p{color:var(--muted);margin-top:18px;position:relative;line-height:1.8;font-weight:400;}
+    
+    .cta-btn{
+        position:relative;display:inline-flex;align-items:center;gap:10px;
+        margin-top:36px;padding:16px 40px;border-radius:999px;border:1px solid rgba(255,255,255,0.4);cursor:pointer;
+        background:linear-gradient(135deg,#8fbf6a,#6f9e4e);
+        color:#fff;font-size:1rem;font-weight:600;letter-spacing:1px;
+        box-shadow:0 16px 36px rgba(122,169,92,.3), inset 0 1px 1px rgba(255,255,255,0.5);
+        transition:transform .15s,box-shadow .25s;
+    }
+    .cta-btn:hover{
+        box-shadow:0 20px 44px rgba(122,169,92,.4), inset 0 1px 1px rgba(255,255,255,0.7); 
+        transform:translateY(-2px);
+    }
+    .cta-btn:active{transform:scale(.96);}
+    .cta-note{font-size:.78rem;color:#86868b;margin-top:20px;position:relative;font-weight:400;}
+
+    /* ================= 页脚 ================= */
+    footer{
+        padding:56px 24px;text-align:center;font-size:12px;color:#86868b;
+        background:#f5f5f7;border-top:1px solid rgba(0,0,0,.06);font-weight:400;
+    }
+    .foot-links{display:flex;justify-content:center;gap:22px;margin-bottom:14px;}
+    .foot-links a{color:#6e6e73;text-decoration:none;transition:color .2s;}
+    .foot-links a:hover{color:var(--ink);}
+
+    /* ================= 模态弹窗 (纯享版) ================= */
+    .modal-overlay {
+        position: fixed; inset: 0; z-index: 10000;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        display: flex; align-items: center; justify-content: center;
+        opacity: 0; visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        padding: 20px;
+    }
+    .modal-overlay.show { opacity: 1; visibility: visible; }
+    
+    .modal-box {
+        background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8));
+        backdrop-filter: blur(40px) saturate(200%);
+        -webkit-backdrop-filter: blur(40px) saturate(200%);
+        border: 1px solid rgba(255,255,255,0.9);
+        box-shadow: 0 24px 60px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,1);
+        
+        border-radius: 28px;
+        width: 100%; max-width: 500px;
+        position: relative; 
+        transform: translateY(20px) scale(0.95);
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .modal-overlay.show .modal-box { transform: translateY(0) scale(1); }
+    
+    .modal-content {
+        padding: 30px 20px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .modal-content::-webkit-scrollbar { display: none; }
+    
+    .modal-close {
+        position: absolute; top: 16px; right: 16px;
+        background: rgba(0,0,0,0.05); 
+        border: none;
+        border-radius: 50%;
+        width: 32px; height: 32px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px;
+        color: #555; cursor: pointer; line-height: 1;
+        transition: color 0.2s, background 0.2s;
+        z-index: 100;
+    }
+    .modal-close:hover { color: var(--ink); background: rgba(0,0,0,0.1); }
+    
+    .modal-title {
+        text-align: center; font-size: 1.2rem; font-weight:700;
+        margin-bottom: 20px; color: var(--ink);
+        padding: 10px 0;
+    }
+    
+    .qr-container {
+        display: flex; flex-direction: column; gap: 24px; align-items: center;
+    }
+    
+    /* 删除了套娃的背景、边框和padding，直接展示图片 */
+    .qr-item {
+        width: 100%;
+        max-width: 320px; 
+        text-align: center;
+    }
+    
+    /* 图片自带白底卡片，此处只加阴影和圆角即可 */
+    .qr-item img {
+        width: 100%; 
+        height: auto;
+        border-radius: 16px; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        display: block;
+    }
+    
+    .qr-item p { 
+        font-size: 0.95rem; 
+        font-weight: 700; 
+        color: #333; 
+        margin-top: 16px; 
+        letter-spacing: 1px;
+    }
+
+    /* ================= Toast ================= */
+    .toast{
+        position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(18px);
+        background:rgba(25,25,25,.85);
+        backdrop-filter:blur(20px) saturate(150%);
+        -webkit-backdrop-filter:blur(20px) saturate(150%);
+        border: 1px solid rgba(255,255,255,0.1);
+        color:#fff;padding:12px 22px;border-radius:16px;
+        font-size:.85rem;font-weight:500;opacity:0;pointer-events:none;
+        transition:all .3s cubic-bezier(.25,1,.5,1);z-index:10005;
+        box-shadow:0 10px 28px rgba(0,0,0,.28);
+        text-align:center;max-width:88vw;
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+    /* ================= 响应式 ================= */
+    @media (max-width:820px){
+        .archive-layout{grid-template-columns:1fr;}
+        .cards-wrap{grid-template-columns:1fr;}
+        .team-wrap{grid-template-columns:repeat(2,1fr);}
+    }
+    @media (max-width:480px){
+        nav{padding:0 14px;font-size:12px;}
+        .nav-links a{display:none;}
+        .nav-links .contact-btn{display:inline-flex;}
+        .brand{font-size:13px;}
+        .hero{padding-top:100px;}
+        .section{padding:82px 18px;}
+        .stats-grid{gap:10px;}
+        .stat-card{padding:20px 16px;}
+        .team-wrap{grid-template-columns:1fr;}
+        .leg{width:24px;height:24px;}
+        .rating-card{padding:26px 18px;}
+        .feature-card{padding:24px 20px 26px;}
+        .parallax-section{padding:90px 20px;}
+        .parallax-block { opacity: 0.35; }
+        .parallax-section h2 { font-size: 1.8rem; }
+        .modal-content { padding: 24px 16px; }
+        .modal-box { max-height: 90vh; }
+    }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<nav>
+    <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="studio-name">是只美西螈</span>
+    </div>
+    <div class="nav-links">
+        <a href="#archive">档案</a>
+        <a href="#features">玩法</a>
+        <a href="#team">团队</a>
+        <button class="contact-btn" onclick="openModal()">联系我们</button>
+    </div>
+</nav>
+
+<main>
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-inner">
+            <div class="eyebrow"><span class="dot"></span><span class="studio-name">是只美西螈</span> · 地图作品</div>
+            <h1>泥土商店<br><span>地图</span></h1>
+            <p class="lead">
+                一张围绕“泥土商店”展开的生存地图<br>
+                <b>泥土是唯一货币</b><br>
+                草方块、砂土、灰化土都不算钱<br>
+                挖到真正的泥土，才能在这里交易、建造、活下去
+            </p>
+            <div class="hero-tags">
+                <span class="tag"><span class="mini-leg"><svg viewBox="0 0 8 8"><path class="px-meat" d="M2,0h4v1h-4z M1,1h6v3h-6z M2,4h4v1h-4z"/><path class="px-bone" d="M3,5h2v3h-2z"/></svg></span>4.2 分好评</span>
+                <span class="tag">10 万+ 下载</span>
+                <span class="tag">3 个建筑区域</span>
+                <span class="tag">2 个挖土区域</span>
+            </div>
+        </div>
+        <div class="scroll-hint">向下滚动 ↓</div>
+    </section>
+
+    <!-- 档案 -->
+    <section class="section" id="archive">
+        <div class="section-eyebrow reveal">Archive</div>
+        <h2 class="reveal">地图档案</h2>
+        <p class="sub reveal">一张以泥土商店为核心、已经跑遍无数存档的地图作品</p>
+
+        <div class="archive-layout">
+            <!-- 评分大卡 -->
+            <div class="rating-card reveal">
+                <div class="score"><span data-count="4.2">0</span><small> / 5</small></div>
+                <div class="rating-legs">
+                    <span class="leg full"><svg viewBox="0 0 8 8"><path class="px-meat" d="M2,0h4v1h-4z M1,1h6v3h-6z M2,4h4v1h-4z"/><path class="px-bone" d="M3,5h2v3h-2z"/></svg></span>
+                    <span class="leg full"><svg viewBox="0 0 8 8"><path class="px-meat" d="M2,0h4v1h-4z M1,1h6v3h-6z M2,4h4v1h-4z"/><path class="px-bone" d="M3,5h2v3h-2z"/></svg></span>
+                    <span class="leg full"><svg viewBox="0 0 8 8"><path class="px-meat" d="M2,0h4v1h-4z M1,1h6v3h-6z M2,4h4v1h-4z"/><path class="px-bone" d="M3,5h2v3h-2z"/></svg></span>
+                    <span class="leg full"><svg viewBox="0 0 8 8"><path class="px-meat" d="M2,0h4v1h-4z M1,1h6v3h-6z M2,4h4v1h-4z"/><path class="px-bone" d="M3,5h2v3h-2z"/></svg></span>
+                    <span class="leg half">
+                        <svg class="leg-base" viewBox="0 0 8 8"><path class="px-meat" d="M2,0h4v1h-4z M1,1h6v3h-6z M2,4h4v1h-4z"/><path class="px-bone" d="M3,5h2v3h-2z"/></svg>
+                        <svg class="leg-fill" viewBox="0 0 8 8"><path class="px-meat" d="M2,0h4v1h-4z M1,1h6v3h-6z M2,4h4v1h-4z"/><path class="px-bone" d="M3,5h2v3h-2z"/></svg>
+                    </span>
+                </div>
+                <div class="hint">多数玩家给出鸡腿好评<br>“泥土当钱”的设定被夸爆了</div>
+            </div>
+
+            <!-- 四个数据卡 -->
+            <div class="stats-grid">
+                <div class="stat-card reveal">
+                    <div class="label">累计下载</div>
+                    <div class="num"><span data-count="100000">0</span><span class="unit">+</span></div>
+                </div>
+                <div class="stat-card reveal">
+                    <div class="label">地图方块规模</div>
+                    <div class="num"><span data-count="1200">0</span></div>
+                </div>
+                <div class="stat-card reveal">
+                    <div class="label">建筑区域</div>
+                    <div class="num"><span data-count="3">0</span><span class="unit">个</span></div>
+                </div>
+                <div class="stat-card reveal">
+                    <div class="label">挖土区域</div>
+                    <div class="num"><span data-count="2">0</span><span class="unit">个</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="badge-row reveal">
+            <div class="trust-badge"><span class="dot"></span>10 万+ 次下载</div>
+            <div class="trust-badge"><span class="dot gold"></span>4.2 分好评</div>
+            <div class="trust-badge"><span class="dot"></span>持续更新中</div>
+            <div class="trust-badge"><span class="dot"></span>支持多人联机</div>
+        </div>
+    </section>
+
+    <!-- 玩法 -->
+    <section class="section" id="features">
+        <div class="section-eyebrow reveal">Gameplay</div>
+        <h2 class="reveal">地图里有什么</h2>
+        <p class="sub reveal">核心玩法围绕“泥土是唯一货币”展开</p>
+
+        <div class="cards-wrap">
+            <div class="feature-card reveal">
+                <div class="index">01</div>
+                <div class="icon">🏪</div>
+                <h3>泥土商店</h3>
+                <p>地图中心的地标建筑<br>所有交易只收 <em>泥土</em><br>草方块、砂土、灰化土一律不收<br>别拿错钱</p>
+            </div>
+            <div class="feature-card reveal">
+                <div class="index">02</div>
+                <div class="icon">🟫</div>
+                <h3>泥土 = 唯一货币</h3>
+                <p>只有普通泥土能当钱花<br>其他土看着像，但在这个世界里一文不值<br>挖错了只能自己留着盖房</p>
+            </div>
+            <div class="feature-card reveal">
+                <div class="index">03</div>
+                <div class="icon">🏛️</div>
+                <h3>精美的建筑</h3>
+                <p>整张地图共有 <em>3 个建筑区域</em><br>每一座都做了完整的内饰与细节<br>值得走进去慢慢看</p>
+            </div>
+            <div class="feature-card reveal">
+                <div class="index">04</div>
+                <div class="icon">⛏️</div>
+                <h3>挖土系统</h3>
+                <p>整张地图只有 <em>2 个挖土区域</em><br>而且只能挖出普通泥土<br>别指望能挖到草方块、砂土或灰化土<br>这里只产一种钱</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 团队 -->
+    <section class="section" id="team">
+        <div class="section-eyebrow reveal">Team</div>
+        <h2 class="reveal">制作团队</h2>
+        <p class="sub reveal"><span class="studio-name">是只美西螈</span> · 泥土商店地图项目组</p>
+
+        <div class="team-wrap">
+            <div class="team-card reveal">
+                <div class="team-role">作者</div>
+                <div class="team-name">坦然Zero</div>
+                <div class="team-desc">地图设计 / 核心系统</div>
+            </div>
+            <div class="team-card reveal">
+                <div class="team-role">副作者</div>
+                <div class="team-name">恬静的乐师</div>
+                <div class="team-desc">建筑 / 氛围</div>
+            </div>
+            <div class="team-card reveal">
+                <div class="team-role">巡查员</div>
+                <div class="team-name">我固排是纟合</div>
+                <div class="team-desc">秩序维护 / 反馈</div>
+            </div>
+            <div class="team-card reveal">
+                <div class="team-role">巡查员</div>
+                <div class="team-name">67凌</div>
+                <div class="team-desc">秩序维护 / 反馈</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 视差区域 -->
+    <section class="parallax-section">
+        <div class="parallax-obj" style="width:120px;height:120px;top:14%;left:8%;" data-speed="0.3">
+            <div class="parallax-block b-dirt" style="animation-delay: 0s;"></div>
+        </div>
+        <div class="parallax-obj" style="width:88px;height:88px;top:62%;right:10%;" data-speed="-0.22">
+            <div class="parallax-block b-grass" style="animation-delay: 1.5s;"></div>
+        </div>
+        <div class="parallax-obj" style="width:140px;height:140px;bottom:9%;left:14%;" data-speed="0.16">
+            <div class="parallax-block b-mud" style="animation-delay: 0.8s;"></div>
+        </div>
+        <div class="parallax-obj" style="width:70px;height:70px;top:24%;right:24%;" data-speed="-0.35">
+            <div class="parallax-block b-coarse" style="animation-delay: 2.2s;"></div>
+        </div>
+        
+        <h2>在这张地图里，泥土就是钱</h2>
+        <p>
+            草方块不是钱，砂土不是钱，灰化土也不是钱。<br>
+            整张地图只有 2 个挖土区域，而且只能挖出普通泥土。<br>
+            想在商店里换东西，就得老老实实去挖。<br>
+            全图一共 3 个建筑区域，每一座都能走进去。
+        </p>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <h2 class="reveal">准备好进入地图了吗</h2>
+        <p class="reveal">10 万+ 玩家已经挖过第一铲泥土了</p>
+        <button class="cta-btn reveal" onclick="enterMap()">立即游玩 <span>→</span></button>
+        <div class="cta-note reveal">由 <span class="studio-name">是只美西螈</span> 打造</div>
+    </section>
+</main>
+
+<footer>
+    <div class="foot-links">
+        <a href="#archive">档案</a>
+        <a href="#features">玩法</a>
+        <a href="#team">团队</a>
+    </div>
+    <div>© 2026 <span class="studio-name">是只美西螈</span> · 泥土商店地图 · 保留所有权利</div>
+</footer>
+
+<!-- 动态二维码弹窗 -->
+<div class="modal-overlay" id="qqModal" onclick="closeModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        
+        <div class="modal-content">
+            <div class="modal-title">加入泥土商店交流群</div>
+            <div class="qr-container">
+                <!-- 去掉了外层纸盒，只剩纯净的图片和底注 -->
+                <div class="qr-item">
+                    <img src="qq1.jpg" alt="一群二维码" onerror="this.src='https://via.placeholder.com/300x500?text=请上传qq1.jpg'">
+                    <p>一群 153090550</p>
+                </div>
+                <div class="qr-item">
+                    <img src="qq2.jpg" alt="二群二维码" onerror="this.src='https://via.placeholder.com/300x500?text=请上传qq2.jpg'">
+                    <p>二群 1059321531</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast" aria-live="polite"></div>
+
+<script>
+    const STUDIO_NAME = "是只美西螈";
+    document.querySelectorAll('.studio-name').forEach(el => { el.textContent = STUDIO_NAME; });
+    document.title = "泥土商店地图 · " + STUDIO_NAME;
+
+    const progressBar = document.getElementById('progressBar');
+    let isScrolling = false;
+    
+    function updateScroll() {
+        const top = window.scrollY;
+        const h = document.documentElement.scrollHeight - window.innerHeight;
+        progressBar.style.width = (h > 0 ? (top / h) * 100 : 0) + '%';
+        
+        const section = document.querySelector('.parallax-section');
+        if (section) {
+            const rect = section.getBoundingClientRect();
+            const winH = window.innerHeight;
+            if (rect.bottom > 0 && rect.top < winH) {
+                const offset = (winH - rect.top) / (winH + rect.height);
+                document.querySelectorAll('.parallax-obj').forEach(b => {
+                    const speed = parseFloat(b.dataset.speed) || 0.2;
+                    const y = (offset - 0.5) * 200 * speed;
+                    b.style.transform = `translateY(${y}px)`;
+                });
+            }
+        }
+        isScrolling = false;
+    }
+
+    window.addEventListener('scroll', () => {
+        if (!isScrolling) {
+            window.requestAnimationFrame(updateScroll);
+            isScrolling = true;
+        }
+    }, { passive: true });
+    updateScroll();
+
+    const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('show');
+                entry.target.querySelectorAll('[data-count]').forEach(sp => {
+                    if (!sp.dataset.done) { sp.dataset.done = '1'; animateCount(sp); }
+                });
+                io.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.16 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    function animateCount(el) {
+        const raw = el.dataset.count;
+        const target = parseFloat(raw);
+        const isFloat = raw.indexOf('.') !== -1;
+        const decimals = isFloat ? (raw.split('.')[1] || '').length : 0;
+        const duration = 1500;
+        const start = performance.now();
+        
+        function tick(now) {
+            const p = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+            const val = target * eased;
+            el.textContent = isFloat
+                ? val.toFixed(decimals)
+                : Math.floor(val).toLocaleString('en-US');
+            if (p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    let enterLock = false;
+    function enterMap() {
+        if (enterLock) return;
+        enterLock = true;
+        showToast('🕹️ 正在跳转网易我的世界官网…', 2000);
+        setTimeout(() => {
+            const win = window.open('https://mc.163.com', '_blank');
+            if (!win) window.location.href = 'https://mc.163.com';
+            enterLock = false;
+        }, 1200);
+    }
+
+    const modal = document.getElementById('qqModal');
+    function openModal() {
+        modal.classList.add('show');
+        const content = modal.querySelector('.modal-content');
+        if (content) content.scrollTop = 0;
+    }
+    function closeModal(e) {
+        if (e && e.target !== modal) return;
+        modal.classList.remove('show');
+    }
+
+    let toastTimer;
+    function showToast(msg, duration) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), duration || 2000);
+    }
+</script>
+</body>
+</html>
